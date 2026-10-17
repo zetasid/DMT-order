@@ -1,0 +1,85 @@
+PROMPT 7 — DMT: Perbaiki Akses Repository Privat dan Verifikasi Push
+
+Lanjutkan workspace DMT yang sedang terbuka. Repository tujuan adalah:
+
+"https://github.com/zetasid/DMT-order"
+
+Repository ini bersifat privat.
+
+1. Lindungi pekerjaan yang sudah ada
+
+- Jangan membuat proyek baru.
+- Jangan menghapus atau mengubah riwayat commit.
+- Jangan menggunakan force push.
+- Jangan menghapus branch atau file.
+- Jangan menimpa isi repository tujuan tanpa membandingkan riwayat dan file terlebih dahulu.
+- Jangan mengubah autentikasi, database, skema, atau desain aplikasi.
+- Jangan melakukan deployment ke VPS.
+
+2. Periksa koneksi Git
+
+Periksa melalui Git dan integrasi Replit yang tersedia:
+
+- Remote "origin" mengarah ke repository DMT yang benar.
+- Branch lokal yang aktif.
+- Commit lokal terbaru dan commit yang menjadi upstream.
+- Status working tree.
+- Apakah "origin/main" dapat dibaca.
+- Apakah autentikasi Git untuk repository privat berfungsi.
+
+Jangan menampilkan access token, password, private key, atau secret dalam log maupun laporan.
+
+3. Perbaiki autentikasi dengan cara aman
+
+Jika Git CLI menolak autentikasi:
+
+- Periksa apakah koneksi GitHub di Replit benar-benar memiliki izin untuk repository privat "zetasid/DMT-order".
+- Gunakan mekanisme autentikasi GitHub yang didukung Replit.
+- Jika otorisasi pengguna diperlukan, minta pengguna menyelesaikannya melalui antarmuka resmi Replit/GitHub.
+- Jangan meminta pengguna menempelkan token atau password ke prompt Agent.
+- Jangan menaruh token dalam URL remote, file ".env", kode, atau commit.
+- Jangan mencoba melewati izin repository privat.
+
+Jika Agent tidak memiliki kemampuan untuk menyelesaikan otorisasi, hentikan langkah autentikasi dan jelaskan tindakan manual yang tepat.
+
+4. Bandingkan sebelum push
+
+Setelah akses repository berhasil:
+
+- Ambil metadata remote tanpa mengubah file lokal.
+- Periksa apakah "main" di GitHub memiliki riwayat yang sama atau berbeda.
+- Identifikasi commit lokal yang belum ada di remote.
+- Periksa diff yang akan dikirim dan pastikan tidak berisi secret atau file sementara.
+- Jika riwayat lokal dan remote berbeda atau tidak dapat digabungkan dengan aman, berhenti dan laporkan perbedaannya.
+
+Jangan melakukan reset, rebase, merge, atau force push secara otomatis jika berisiko menimpa pekerjaan.
+
+5. Push hanya jika aman
+
+Jika autentikasi berhasil, branch tujuan benar, riwayat kompatibel, dan diff telah diperiksa:
+
+- Push perubahan DMT yang memang sudah disiapkan ke branch "main".
+- Jangan membuat commit baru jika tidak diperlukan.
+- Setelah push, verifikasi bahwa SHA commit lokal sama dengan SHA remote yang dituju.
+- Pastikan file workflow ".github/workflows/docker-multiarch-verify.yml" ikut tersedia di repository jika file itu memang ada dalam commit yang dikirim.
+
+Jika ada ketidakpastian tentang riwayat atau perubahan yang akan tertimpa, jangan push. Laporkan keadaan dan tunggu evaluasi.
+
+6. CI setelah sinkronisasi
+
+Jangan mengklaim CI berhasil hanya karena push sukses.
+
+Periksa apakah GitHub Actions berjalan. Jika tersedia dan workflow dapat dijalankan dengan aman, verifikasi hasilnya. Jika belum dijalankan, laporkan status tersebut secara jelas.
+
+7. Laporan akhir
+
+Laporkan:
+
+1. Status akses repository privat.
+2. Branch lokal dan branch remote.
+3. SHA commit lokal dan remote.
+4. Apakah push benar-benar berhasil.
+5. Status workflow GitHub Actions.
+6. Kendala yang tersisa.
+
+Kerjakan tugas sinkronisasi ini saja. Jangan melanjutkan integrasi marketplace atau deployment. Berhenti setelah laporan selesai.
