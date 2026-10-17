@@ -234,7 +234,12 @@ test(
           );
         }
 
-        assert.equal((await anonymous.request(baseUrl, "/api/healthz")).response.status, 200);
+        const liveness = await anonymous.request(baseUrl, "/api/healthz");
+        assert.equal(liveness.response.status, 200);
+        assert.deepEqual(liveness.data, { status: "ok" });
+        const readiness = await anonymous.request(baseUrl, "/api/readyz");
+        assert.equal(readiness.response.status, 200);
+        assert.deepEqual(readiness.data, { status: "ready" });
         assert.equal((await anonymous.request(baseUrl, "/api/auth/csrf")).response.status, 200);
       });
 

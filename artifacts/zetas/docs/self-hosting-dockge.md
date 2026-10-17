@@ -54,6 +54,10 @@ The web service listens on `127.0.0.1:${APP_PORT:-8080}`. Configure the host's T
 
 For later schema changes, review the generated SQL first, then run `docker compose run --rm migrate`. Do not add a migration command to the API container's startup command.
 
+## Health and database readiness
+
+`/api/healthz` is a liveness check: it confirms that the API process can answer HTTP requests, but it does not contact PostgreSQL. `/api/readyz` runs a lightweight `SELECT 1` against PostgreSQL and returns HTTP 503 with only `{"status":"not_ready"}` if the database is unavailable. The API container health check uses `/api/readyz`, so a healthy API container also has a working database connection. Neither response exposes connection details or credentials.
+
 ## Reverse proxy and session security
 
 The API trusts the number of proxy hops configured in `TRUST_PROXY_HOPS` (default `1`, for the Compose Nginx hop). Set it to the actual number of trusted proxies only when each proxy sanitizes and forwards `X-Forwarded-For` and `X-Forwarded-Proto`. Do not trust arbitrary client-supplied forwarding headers. The HTTPS proxy must forward `X-Forwarded-Proto: https`; the session cookie becomes Secure when the request is HTTPS.

@@ -1,1 +1,2 @@
 - [Docker build limits](docker-build-limits.md) — this Replit runner lacks BuildKit mount permissions; Compose validation is not an image build.
+- [NPM metadata fallback](npm-registry-metadata-fallback.md) — direct registry reads worked when Replit web search and fetch returned 402.
