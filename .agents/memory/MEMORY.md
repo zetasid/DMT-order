@@ -1,2 +1,3 @@
 - [Docker build limits](docker-build-limits.md) — this Replit runner lacks BuildKit mount permissions; Compose validation is not an image build.
+- [GitHub source-control auth](github-source-control-auth.md) — healthy OAuth metadata may not mean Git CLI can read the remote; verify authenticated refs before syncing.
 - [NPM metadata fallback](npm-registry-metadata-fallback.md) — direct registry reads worked when Replit web search and fetch returned 402.
