@@ -20,8 +20,12 @@ export const errorHandler: ErrorRequestHandler = (error, req, res, next) => {
     return;
   }
 
-  req.log.error({ err: error }, "Unhandled API request error");
   const statusCode = getStatusCode(error) ?? 500;
+  const errorName =
+    error && typeof error === "object" && "name" in error && typeof error.name === "string"
+      ? error.name
+      : "UnknownError";
+  req.log.error({ statusCode, errorName }, "Unhandled API request error");
   res.status(statusCode).json({
     error: statusCode >= 500 ? "Internal server error" : "Request failed",
   });

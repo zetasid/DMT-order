@@ -1,41 +1,16 @@
-import { useMemo, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import { Link, Route, Switch, useLocation, Router as WouterRouter } from "wouter";
+import { useGetCurrentUser } from "@workspace/api-client-react";
+import type { AuthUser } from "@workspace/api-client-react";
 import {
   Activity, ArrowDownLeft, ArrowLeft, ArrowRight, BadgeCheck, Box,
   ChevronRight, CircleHelp, Clock3, CreditCard, Gauge, Home, Info, Layers3,
   Link2, MessageSquareText, Monitor, PackageCheck, Search,
-  Settings2, ShoppingBag, Store, Users,
+  Settings2, ShoppingBag, Store, Users, ShieldCheck,
 } from "lucide-react";
 import { demoActivity, demoCounts, demoOrders, formatRupiah, type DemoOrder, type OrderStatus } from "./data/demo-fixtures";
+import { LoginPage, ProfilePage, StoresPage, UsersPage } from "./account-pages";
 
-const navigation = [
-  { label: "Overview", entries: [
-    { href: "/", title: "Dashboard", icon: Gauge },
-    { href: "/orders", title: "Pesanan", icon: ShoppingBag },
-    { href: "/chat", title: "Percakapan", icon: MessageSquareText },
-  ]},
-  { label: "Workspace", entries: [
-    { href: "/stores", title: "Toko", icon: Store },
-    { href: "/sellers", title: "Seller", icon: Layers3 },
-    { href: "/users", title: "Pengguna", icon: Users },
-  ]},
-  { label: "Pengaturan", entries: [
-    { href: "/integrations", title: "Integrasi", icon: Link2 },
-    { href: "/settings", title: "Preferensi", icon: Settings2 },
-    { href: "/profile", title: "Profil", icon: CircleHelp },
-  ]},
-];
-const mobileItems = [
-  { href: "/", title: "Beranda", icon: Home },
-  { href: "/orders", title: "Pesanan", icon: ShoppingBag },
-  { href: "/chat", title: "Chat", icon: MessageSquareText },
-  { href: "/stores", title: "Toko", icon: Store },
-  { href: "/sellers", title: "Seller", icon: Users },
-  { href: "/users", title: "Pengguna", icon: Users },
-  { href: "/integrations", title: "Integrasi", icon: Link2 },
-  { href: "/settings", title: "Preferensi", icon: Settings2 },
-  { href: "/profile", title: "Profil", icon: CircleHelp },
-];
 const pageNames: Record<string, string> = {
   "/": "Dashboard", "/orders": "Pesanan", "/chat": "Percakapan", "/stores": "Toko",
   "/sellers": "Seller", "/users": "Pengguna", "/integrations": "Integrasi",
@@ -46,9 +21,32 @@ function Brand() {
   return <div className="brand" aria-label="ZETAS workspace"><span className="brand-mark"><Layers3 size={18} strokeWidth={2.1} /></span><div><div className="brand-name">zetas</div><div className="brand-sub">order workspace</div></div></div>;
 }
 
-function Shell({ children }: { children: ReactNode }) {
+function Shell({ children, user }: { children: ReactNode; user: AuthUser }) {
   const [location] = useLocation();
   const active = location.startsWith("/orders/") ? "/orders" : location;
+  const ownerOnly = [
+    { href: "/sellers", title: "Seller", icon: Layers3 },
+    { href: "/users", title: "Pengguna", icon: Users },
+    { href: "/integrations", title: "Integrasi", icon: Link2 },
+  ];
+  const navigation = [
+    { label: "Overview", entries: [
+      { href: "/", title: "Dashboard", icon: Gauge },
+      { href: "/orders", title: "Pesanan", icon: ShoppingBag },
+      { href: "/chat", title: "Percakapan", icon: MessageSquareText },
+    ]},
+    { label: "Workspace", entries: [
+      { href: "/stores", title: "Toko", icon: Store },
+      ...(user.accountType === "owner" ? ownerOnly.slice(0, 2) : []),
+    ]},
+    { label: "Pengaturan", entries: [
+      ...(user.accountType === "owner" ? [ownerOnly[2]] : []),
+      { href: "/settings", title: "Preferensi", icon: Settings2 },
+      { href: "/profile", title: "Profil", icon: CircleHelp },
+    ]},
+  ];
+  const initials = user.displayName.trim().split(/\s+/).slice(0, 2).map(part => part[0]?.toUpperCase()).join("");
+  const showDemo = location === "/" || location === "/orders" || location.startsWith("/orders/");
   return <div className="app-shell">
     <aside className="sidebar">
       <Brand />
@@ -61,17 +59,17 @@ function Shell({ children }: { children: ReactNode }) {
           })}
         </nav>
       </div>)}
-      <div className="sidebar-bottom"><strong>Workspace demo</strong><p>Contoh tampilan ZETAS. Tidak terhubung ke toko atau transaksi nyata.</p></div>
+      <div className="sidebar-bottom"><strong>{user.displayName}</strong><p>{user.accountType === "owner" ? "Owner workspace" : `${user.memberships.length} keanggotaan tenant`}. Akses mengikuti peran akun.</p></div>
     </aside>
     <main className="main-area">
       <header className="topbar">
         <Link href="/" className="mobile-menu" aria-label="ZETAS beranda"><span className="brand-mark"><Layers3 size={15} /></span><span>zetas</span></Link>
         <div className="crumb" aria-label="Lokasi saat ini">Workspace <ChevronRight size={12} style={{ display: "inline", verticalAlign: "middle" }} /> {pageNames[active] ?? "Detail pesanan"}</div>
-        <div className="top-actions"><span className="demo-pill"><span className="demo-dot" />DEMO ENVIRONMENT</span><div className="avatar" aria-label="Profil demo">ZD</div></div>
+        <div className="top-actions">{showDemo && <span className="demo-pill"><span className="demo-dot" />DEMO DATA</span>}<Link href="/profile" className="avatar" aria-label={`Profil ${user.displayName}`} data-testid="link-topbar-profile">{initials || "ZT"}</Link></div>
       </header>
       {children}
     </main>
-    <nav className="mobile-nav" aria-label="Navigasi utama seluler">{mobileItems.map(item => { const Icon = item.icon; return <Link key={item.href} href={item.href} className={active === item.href ? "active" : ""} aria-current={active === item.href ? "page" : undefined} data-testid={`mobile-nav-${item.title.toLowerCase()}`}><Icon aria-hidden="true" /><span>{item.title}</span></Link>; })}</nav>
+    <nav className="mobile-nav" aria-label="Navigasi utama seluler">{navigation.flatMap(group => group.entries).map(item => { const Icon = item.icon; return <Link key={item.href} href={item.href} className={active === item.href ? "active" : ""} aria-current={active === item.href ? "page" : undefined} data-testid={`mobile-nav-${item.title.toLowerCase()}`}><Icon aria-hidden="true" /><span>{item.title}</span></Link>; })}</nav>
   </div>;
 }
 
@@ -205,24 +203,41 @@ function Settings() {
 
 function NotFound() { return <div className="page-content"><div className="soft-card not-found"><div className="empty-icon" style={{ margin: "0 auto 15px" }}><Search /></div><p className="eyebrow">Halaman tidak ditemukan</p><h1>Jalur ini belum tersedia</h1><p>Periksa alamat, atau kembali ke ringkasan workspace.</p><Link href="/" className="subtle-button" style={{ marginTop: 14 }} data-testid="link-not-found-home"><Home /> Ke dashboard</Link></div></div>; }
 
-function Router() {
-  return <Shell><Switch>
+function Router({ user }: { user: AuthUser }) {
+  return <Shell user={user}><Switch>
     <Route path="/" component={Dashboard} />
     <Route path="/orders" component={OrderList} />
     <Route path="/orders/:id">{params => <OrderDetail id={params.id} />}</Route>
     <Route path="/chat"><EmptyPage kind="chat" /></Route>
-    <Route path="/stores"><EmptyPage kind="stores" /></Route>
-    <Route path="/sellers"><EmptyPage kind="sellers" /></Route>
-    <Route path="/users"><EmptyPage kind="users" /></Route>
-    <Route path="/integrations"><EmptyPage kind="integrations" /></Route>
+    <Route path="/stores"><StoresPage user={user} /></Route>
+    <Route path="/sellers">{user.accountType === "owner" ? <EmptyPage kind="sellers" /> : <NotFound />}</Route>
+    <Route path="/users">{user.accountType === "owner" ? <UsersPage user={user} /> : <NotFound />}</Route>
+    <Route path="/integrations">{user.accountType === "owner" ? <EmptyPage kind="integrations" /> : <NotFound />}</Route>
     <Route path="/settings" component={Settings} />
-    <Route path="/profile"><EmptyPage kind="profile" /></Route>
+    <Route path="/profile"><ProfilePage user={user} /></Route>
     <Route component={NotFound} />
   </Switch></Shell>;
 }
 
+function SessionRouter() {
+  const [location, setLocation] = useLocation();
+  const currentUser = useGetCurrentUser();
+  const errorStatus = (currentUser.error as { status?: number } | null)?.status;
+  useEffect(() => {
+    if (location !== "/login" && currentUser.isError && errorStatus === 401) setLocation("/login");
+  }, [currentUser.isError, errorStatus, location, setLocation]);
+  if (location === "/login") return <LoginPage />;
+  if (currentUser.isLoading) return <div className="page-content"><section className="soft-card account-panel" role="status" aria-label="Memeriksa sesi"><div className="loading-lines"><span /><span /><span /></div></section></div>;
+  if (currentUser.isError) {
+    if (errorStatus === 401) return <LoginPage />;
+    return <div className="page-content"><section className="soft-card empty-panel" role="alert" data-testid="error-session"><div className="empty-icon"><ShieldCheck /></div><h2>Sesi belum dapat diperiksa</h2><p>Periksa koneksi lalu coba kembali. Workspace hanya terbuka setelah sesi terverifikasi.</p><button type="button" className="subtle-button" onClick={() => currentUser.refetch()} data-testid="button-retry-session">Coba lagi</button><Link href="/login" className="text-link" style={{ marginTop: 12 }} data-testid="link-session-login">Ke halaman masuk</Link></section></div>;
+  }
+  if (!currentUser.data?.user || currentUser.data.user.status !== "active") return <LoginPage />;
+  return <Router user={currentUser.data.user} />;
+}
+
 function App() {
-  return <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}><Router /></WouterRouter>;
+  return <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}><SessionRouter /></WouterRouter>;
 }
 
 export default App;

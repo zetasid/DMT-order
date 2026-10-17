@@ -17,6 +17,7 @@ const DEFAULT_JSON_ACCEPT = "application/json, application/problem+json";
 
 let _baseUrl: string | null = null;
 let _authTokenGetter: AuthTokenGetter | null = null;
+let _csrfToken: string | null = null;
 
 /**
  * Set a base URL that is prepended to every relative request URL
@@ -42,6 +43,11 @@ export function setBaseUrl(url: string | null): void {
  */
 export function setAuthTokenGetter(getter: AuthTokenGetter | null): void {
   _authTokenGetter = getter;
+}
+
+/** Keep same-origin CSRF state in memory only; never persist it in browser storage. */
+export function setCsrfToken(token: string | null): void {
+  _csrfToken = token;
 }
 
 function isRequest(input: RequestInfo | URL): input is Request {
@@ -359,13 +365,33 @@ export async function customFetch<T = unknown>(
   }
 
   const requestInfo = { method, url: resolveUrl(input) };
+  const isSafeMethod = method === "GET" || method === "HEAD" || method === "OPTIONS";
+  if (!isSafeMethod && _csrfToken && !headers.has("x-csrf-token")) {
+    headers.set("x-csrf-token", _csrfToken);
+  }
 
-  const response = await fetch(input, { ...init, method, headers });
+  const response = await fetch(input, {
+    ...init,
+    method,
+    headers,
+    credentials: init.credentials ?? "same-origin",
+  });
 
   if (!response.ok) {
     const errorData = await parseErrorBody(response, method);
     throw new ApiError(response, errorData, requestInfo);
   }
 
-  return (await parseSuccessBody(response, responseType, requestInfo)) as T;
+  const result = await parseSuccessBody(response, responseType, requestInfo);
+  if (
+    result &&
+    typeof result === "object" &&
+    "csrfToken" in result &&
+    typeof result.csrfToken === "string"
+  ) {
+    _csrfToken = result.csrfToken;
+  } else if (method === "POST" && requestInfo.url.endsWith("/auth/logout")) {
+    _csrfToken = null;
+  }
+  return result as T;
 }

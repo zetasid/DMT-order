@@ -11,6 +11,13 @@ out-tsc
 # dependencies
 node_modules
 
+# local secrets and operational data
+.env
+.env.*
+!.env.example
+!.env.docker.example
+/backups/
+
 # IDEs and editors
 /.idea
 .project

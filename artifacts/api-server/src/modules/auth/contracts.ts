@@ -1,15 +1,15 @@
-/**
- * Extension points for a future managed authentication integration.
- * This stage deliberately has no local credential or session implementation.
- */
+/** Shared server-side identity and tenant-role contracts. */
 export type WorkspaceRole = "owner" | "seller" | "operator";
 
 export interface AuthenticatedActor {
-  userId: string;
-  role: WorkspaceRole;
-  sellerId?: string;
+  id: string;
+  email: string;
+  displayName: string;
+  accountType: "owner" | "member";
+  status: "active" | "disabled";
 }
 
-export interface AuthenticationProvider<Request = unknown> {
-  authenticate(request: Request): Promise<AuthenticatedActor | null>;
+export interface TenantActor {
+  tenantId: string;
+  role: Exclude<WorkspaceRole, "owner">;
 }

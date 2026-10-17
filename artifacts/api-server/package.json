@@ -7,6 +7,9 @@
     "dev": "export NODE_ENV=development && pnpm run build && pnpm run start",
     "build": "node ./build.mjs",
     "start": "node --enable-source-maps ./dist/index.mjs",
+    "migrate": "pnpm run build && node ./dist/migrate.mjs",
+    "bootstrap-owner": "pnpm run build && node ./dist/bootstrap-owner.mjs",
+    "test": "tsx --test src/tests/*.test.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {

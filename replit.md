@@ -8,12 +8,16 @@ Fondasi aplikasi web responsif dan PWA untuk manajemen pesanan digital ZETAS.
 - `pnpm --filter @workspace/zetas run typecheck` — check the ZETAS frontend
 - `pnpm --filter @workspace/zetas run build` — build the ZETAS frontend
 - `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
+- `pnpm --filter @workspace/api-server run test` — run auth/tenant integration tests against a dedicated development/test database
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push schema changes only to the dedicated development/test database
-- No database is used by the demo UI. When persistence is added, `DATABASE_URL` must target a dedicated test/development database, never production.
-- See `.env.example` for placeholders. Put real credentials in Replit Secrets, not source files.
+- `pnpm --filter @workspace/db run generate` — generate a versioned migration after changing the schema
+- `pnpm --filter @workspace/db run migrate` — apply reviewed migrations only to the dedicated development/test database
+- `pnpm --filter @workspace/api-server run bootstrap-owner` — interactive, one-time Owner bootstrap; requires an already migrated development database and a TTY
+- Docker/Dockge instructions are in `artifacts/zetas/docs/self-hosting-dockge.md`
+- `DATABASE_URL` in Replit must target the dedicated development/test database, never production. Do not run tests or schema commands against production.
+- See `.env.example` and `.env.docker.example` for placeholders. Put real credentials in Replit Secrets or the Dockge host's ignored `.env`, never in source files.
 
 ## Stack
 
@@ -23,27 +27,33 @@ Fondasi aplikasi web responsif dan PWA untuk manajemen pesanan digital ZETAS.
 - DB: PostgreSQL + Drizzle ORM
 - Validation: Zod (`zod/v4`), `drizzle-zod`
 - API codegen: Orval (from OpenAPI spec)
-- Build: esbuild (CJS bundle)
+- Build: esbuild (ESM bundles)
 - PWA: web app manifest and service worker with static-asset-only caching
 
 ## Where things live
 
 - `artifacts/zetas/src/` — app routes, UI, and demo fixtures
 - `artifacts/zetas/public/` — PWA manifest, icon, offline page, and service worker
-- `artifacts/zetas/docs/architecture.md` — architecture boundaries and current limitations
-- `artifacts/api-server/src/modules/` — future auth and marketplace adapter contracts
+- `artifacts/zetas/docs/architecture.md` — architecture boundaries and security decisions
+- `artifacts/zetas/docs/self-hosting-dockge.md` — Dockge Compose, backups, restore, and multi-architecture validation
+- `artifacts/api-server/src/modules/auth/` — local password hashing and identity contracts
+- `artifacts/api-server/src/cli/` — explicit migration and single-run Owner bootstrap commands
+- `lib/db/migrations/` — reviewed, versioned PostgreSQL migrations
 - `lib/api-spec/openapi.yaml` — API contract source of truth
 - `lib/db/src/schema/` — Drizzle schema source of truth
 
 ## Architecture decisions
 
 - Dashboard/order examples are static and clearly marked as demo data; they are not persisted.
-- Auth and marketplace directories define extension boundaries only; no auth or marketplace integration is active.
+- Authentication uses local email/password accounts, Node scrypt password hashes, PostgreSQL-backed server sessions, CSRF protection, and role/membership checks on the API.
+- Owner is a single installation-wide account; each Seller has one tenant, and Operators are scoped through tenant memberships. The browser never supplies an authoritative role or active user ID.
+- Tenant deletion is a soft deactivation. Account disabling revokes stored sessions.
+- Marketplace APIs, real order synchronization, and chat delivery remain out of scope; dashboard/order fixtures are still explicitly demo-only.
 - Offline behavior deliberately shows a generic connection message rather than serving cached order pages or private API data.
 
 ## Product
 
-ZETAS is a multi-seller/multi-marketplace order-management platform in development. This first stage provides a responsive dashboard and navigable page shells only; it does not process real orders or connect stores.
+ZETAS is a multi-seller/multi-marketplace order-management platform in development. The current foundation includes local multi-tenant authentication and a responsive PWA; order and marketplace screens remain demo-only and are not connected to real stores.
 
 ## User preferences
 
@@ -55,7 +65,7 @@ ZETAS is a multi-seller/multi-marketplace order-management platform in developme
 
 ## Gotchas
 
-- Do not run the Drizzle schema push command until `DATABASE_URL` has been verified to point at the dedicated development/test database.
+- Generate and review additive migrations before applying them. Never run migration or test commands against production.
 - Keep service-worker caching limited to static assets; never cache authenticated, order, chat, account, or API responses.
 
 ## Pointers
