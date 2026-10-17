@@ -47,7 +47,7 @@ export async function verifyPassword(password: string, encoded: string): Promise
   return timingSafeEqual(actual, expected);
 }
 
-const dummyPasswordHashPromise = hashPassword("ZETAS-invalid-account-timing-probe");
+const dummyPasswordHashPromise = hashPassword(randomBytes(32).toString("base64url"));
 
 export async function verifyPasswordOrDummy(
   password: string,

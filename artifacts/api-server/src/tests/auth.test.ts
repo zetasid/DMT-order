@@ -201,6 +201,43 @@ test(
     const baseUrl = `http://127.0.0.1:${address.port}`;
 
     try {
+      await t.test("Private API endpoints reject unauthenticated requests", async () => {
+        const anonymous = createClient();
+        const protectedRequests: Array<{
+          method: string;
+          path: string;
+          body?: Record<string, unknown>;
+        }> = [
+          { method: "GET", path: "/api/auth/me" },
+          { method: "POST", path: "/api/auth/logout" },
+          { method: "GET", path: "/api/tenants" },
+          { method: "GET", path: `/api/tenants/${fixtures.tenantA.id}` },
+          { method: "PATCH", path: `/api/tenants/${fixtures.tenantA.id}`, body: { name: "No session" } },
+          { method: "DELETE", path: `/api/tenants/${fixtures.tenantA.id}` },
+          { method: "GET", path: "/api/admin/users" },
+          { method: "POST", path: "/api/admin/sellers", body: {} },
+          { method: "POST", path: "/api/admin/operators", body: {} },
+          {
+            method: "PATCH",
+            path: `/api/admin/users/${fixtures.sellerA.id}/status`,
+            body: { status: "disabled" },
+          },
+        ];
+        for (const endpoint of protectedRequests) {
+          const result = await anonymous.request(baseUrl, endpoint.path, {
+            method: endpoint.method,
+            body: endpoint.body,
+          });
+          assert.ok(
+            result.response.status === 401 || result.response.status === 403,
+            `${endpoint.method} ${endpoint.path} unexpectedly returned ${result.response.status}`,
+          );
+        }
+
+        assert.equal((await anonymous.request(baseUrl, "/api/healthz")).response.status, 200);
+        assert.equal((await anonymous.request(baseUrl, "/api/auth/csrf")).response.status, 200);
+      });
+
       await t.test("Owner can authenticate and sees all tenants", async () => {
         const ownerClient = new ApiClient(true);
         allClients.push(ownerClient);
@@ -219,6 +256,7 @@ test(
         assert.match(login.response.headers.get("set-cookie") ?? "", /HttpOnly/i);
         assert.match(login.response.headers.get("set-cookie") ?? "", /SameSite=Lax/i);
         assert.match(login.response.headers.get("set-cookie") ?? "", /Secure/i);
+        assert.ok(ownerClient.sessionIds.size >= 2, "login must rotate the session ID");
 
         const tenants = await ownerClient.request(baseUrl, "/api/tenants");
         assert.equal(tenants.response.status, 200);
@@ -242,6 +280,21 @@ test(
         assert.deepEqual(authUser.memberships.map((membership) => membership.tenantId), [
           fixtures.tenantA.id,
         ]);
+        const tenantListWithTamperedQuery = await sellerClient.request(
+          baseUrl,
+          `/api/tenants?tenantId=${fixtures.tenantB.id}&tenant_id=${fixtures.tenantB.id}`,
+        );
+        assert.equal(tenantListWithTamperedQuery.response.status, 200);
+        assert.deepEqual(
+          (tenantListWithTamperedQuery.data?.tenants as Array<{ id: string }>).map(
+            (tenant) => tenant.id,
+          ),
+          [fixtures.tenantA.id],
+        );
+        assert.equal(
+          (await sellerClient.request(baseUrl, "/api/tenants/not-a-uuid")).response.status,
+          400,
+        );
 
         const tenantList = await sellerClient.request(baseUrl, "/api/tenants");
         assert.equal(tenantList.response.status, 200);
@@ -271,10 +324,37 @@ test(
         const ownUpdate = await sellerClient.request(
           baseUrl,
           `/api/tenants/${fixtures.tenantA.id}`,
-          { method: "PATCH", body: { name: "Integration Tenant A Updated" } },
+          {
+            method: "PATCH",
+            body: {
+              name: "Integration Tenant A Updated",
+              tenantId: fixtures.tenantB.id,
+              tenant_id: fixtures.tenantB.id,
+              sellerUserId: fixtures.sellerB.id,
+              userId: fixtures.sellerB.id,
+              accountType: "owner",
+            },
+          },
         );
-        assert.equal(ownUpdate.response.status, 200);
-        assert.equal(ownUpdate.data?.name, "Integration Tenant A Updated");
+        assert.ok(ownUpdate.response.status === 200 || ownUpdate.response.status === 400);
+        if (ownUpdate.response.status === 200) {
+          assert.equal(ownUpdate.data?.id, fixtures.tenantA.id);
+          assert.equal(ownUpdate.data?.sellerUserId, fixtures.sellerA.id);
+          assert.equal(ownUpdate.data?.name, "Integration Tenant A Updated");
+        }
+        const ownerClient = clients.owner;
+        assert.ok(ownerClient);
+        const tenantBAfterTampering = await ownerClient.request(
+          baseUrl,
+          `/api/tenants/${fixtures.tenantB.id}`,
+        );
+        assert.equal(tenantBAfterTampering.response.status, 200);
+        assert.equal((tenantBAfterTampering.data as { name: string }).name, "Integration Tenant B");
+        assert.equal(
+          (tenantBAfterTampering.data as { sellerUserId: string }).sellerUserId,
+          fixtures.sellerB.id,
+        );
+        assert.equal((tenantBAfterTampering.data as { status: string }).status, "active");
 
         const adminAccess = await sellerClient.request(baseUrl, "/api/admin/users");
         assert.equal(adminAccess.response.status, 403);
@@ -330,6 +410,34 @@ test(
                 password: TEST_PASSWORD,
                 tenantName: "Nope",
                 tenantSlug: `not-owner-${suffix.slice(0, 8)}`,
+              },
+            })
+          ).response.status,
+          403,
+        );
+        assert.equal(
+          (await operatorClient.request(baseUrl, "/api/admin/users")).response.status,
+          403,
+        );
+        assert.equal(
+          (
+            await operatorClient.request(
+              baseUrl,
+              `/api/admin/users/${fixtures.sellerB.id}/status`,
+              { method: "PATCH", body: { status: "disabled" } },
+            )
+          ).response.status,
+          403,
+        );
+        assert.equal(
+          (
+            await operatorClient.request(baseUrl, "/api/admin/operators", {
+              method: "POST",
+              body: {
+                email: `operator-escalation-${suffix}@example.test`,
+                displayName: "Should Not Exist",
+                password: TEST_PASSWORD,
+                tenantId: fixtures.tenantB.id,
               },
             })
           ).response.status,
@@ -399,6 +507,12 @@ test(
 
         const oldSession = await clients.sellerA?.request(baseUrl, "/api/auth/me");
         assert.equal(oldSession?.response.status, 401);
+        const disabledSessionWrite = await clients.sellerA?.request(
+          baseUrl,
+          `/api/tenants/${fixtures.tenantA.id}`,
+          { method: "PATCH", body: { name: "Disabled write" } },
+        );
+        assert.equal(disabledSessionWrite?.response.status, 401);
         const disabledLogin = await createClient().login(
           baseUrl,
           fixtures.sellerA.email,
