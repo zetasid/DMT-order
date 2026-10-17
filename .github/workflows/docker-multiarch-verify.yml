@@ -1,0 +1,95 @@
+name: Docker multi-architecture verification
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/docker-multiarch-verify.yml"
+      - "Dockerfile"
+      - "compose.yaml"
+      - ".dockerignore"
+      - ".env.docker.example"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - "artifacts/api-server/**"
+      - "artifacts/zetas/**"
+      - "docker/**"
+      - "lib/**"
+      - "scripts/**"
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/docker-multiarch-verify.yml"
+      - "Dockerfile"
+      - "compose.yaml"
+      - ".dockerignore"
+      - ".env.docker.example"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - "artifacts/api-server/**"
+      - "artifacts/zetas/**"
+      - "docker/**"
+      - "lib/**"
+      - "scripts/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  compose-config:
+    name: Validate Compose configuration
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+      - name: Validate Compose using example values only
+        run: docker compose --env-file .env.docker.example config --quiet
+
+  build-oci:
+    name: Build ${{ matrix.target }} for amd64 and arm64
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - api
+          - web
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+        with:
+          driver: docker-container
+      - name: Build and verify OCI image
+        env:
+          TARGET: ${{ matrix.target }}
+          RUNNER_TEMP: ${{ runner.temp }}
+        run: |
+          set -euo pipefail
+          archive="$RUNNER_TEMP/zetas-${TARGET}.oci.tar"
+
+          docker buildx build \
+            --platform linux/amd64,linux/arm64 \
+            --target "$TARGET" \
+            --output "type=oci,dest=$archive" \
+            .
+
+          test -s "$archive"
+          platforms="$(tar -xOf "$archive" index.json \
+            | jq -r '.manifests[] | select(.platform.os == "linux") | .platform.architecture' \
+            | sort -u)"
+          printf 'OCI platforms for %s:\n%s\n' "$TARGET" "$platforms"
+          grep -qx amd64 <<<"$platforms"
+          grep -qx arm64 <<<"$platforms"
+      - name: Upload verified OCI archive
+        uses: actions/upload-artifact@v7
+        with:
+          name: zetas-${{ matrix.target }}-multiarch-oci
+          path: ${{ runner.temp }}/zetas-${{ matrix.target }}.oci.tar
+          if-no-files-found: error
+          retention-days: 1
