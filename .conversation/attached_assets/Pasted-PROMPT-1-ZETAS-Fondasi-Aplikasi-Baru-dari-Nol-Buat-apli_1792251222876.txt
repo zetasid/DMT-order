@@ -1,0 +1,110 @@
+PROMPT 1 — ZETAS: Fondasi Aplikasi Baru dari Nol
+
+Buat aplikasi baru bernama ZETAS, sebuah platform manajemen pesanan digital dan marketplace yang dirancang untuk berkembang menjadi aplikasi multi-seller dan multi-marketplace.
+
+1. Aturan utama pengerjaan
+
+- Bangun proyek baru dari nol. Jangan mengimpor, menyalin, atau memodifikasi repository dan aplikasi ZETAS lama.
+- Jangan mengakses, mengubah, atau melakukan deployment ke VPS produksi mana pun.
+- Jangan menggunakan database produksi. Seluruh pengembangan harus menggunakan database pengujian tersendiri.
+- Jangan mengarang hasil pengujian. Jalankan pemeriksaan yang tersedia dan laporkan hasil sebenarnya.
+- Pada tahap ini, fokus hanya pada fondasi aplikasi, struktur kode, desain UI, responsivitas, dan PWA.
+- Jangan mengimplementasikan integrasi API marketplace, sinkronisasi pesanan, atau pengiriman chat dahulu.
+- Jangan menambahkan fitur yang tidak diminta hanya untuk memperbesar cakupan pengerjaan.
+
+2. Desain UI premium
+
+Gunakan gaya Premium Glassmorphism dengan karakteristik:
+
+- Tampilan modern, transparan seperti kaca buram, bersih, cerah, dan elegan.
+- Palet warna putih mutiara, abu-abu lembut, lavender, dan aksen pastel yang terukur.
+- Jangan menggunakan navy cerah sebagai warna dominan.
+- Kartu semi-transparan, border tipis, blur yang halus, dan bayangan lembut.
+- Tipografi bergaya iOS premium: gunakan font sistem Apple jika tersedia dan fallback sistem yang sesuai di Android serta desktop.
+- Hierarki informasi jelas, ruang kosong proporsional, ikon konsisten, dan animasi ringan.
+- Jaga keterbacaan, kontras teks, aksesibilitas, dan performa. Jangan mengorbankan keterbacaan demi efek kaca.
+- Hindari tampilan dashboard template generik yang penuh kartu, gradien berlebihan, atau dekorasi yang tidak berguna.
+
+3. Responsivitas dan PWA
+
+Bangun dengan pendekatan mobile-first.
+
+- Optimal untuk Android dan layar sentuh.
+- Responsif pada ponsel, tablet, dan desktop.
+- Navigasi mobile nyaman dijangkau dengan ibu jari.
+- Tambahkan manifest PWA yang valid, nama aplikasi ZETAS, ikon yang sesuai, warna tema, dan mode tampilan standalone.
+- Implementasikan service worker dengan strategi cache yang aman.
+- Jangan menyimpan halaman sensitif, data pesanan, kredensial, atau respons API pribadi dalam cache offline.
+- Sediakan fallback saat jaringan tidak tersedia tanpa menampilkan data sensitif yang kedaluwarsa.
+- Pastikan aplikasi berjalan melalui HTTPS saat dipasang sebagai PWA.
+
+4. Struktur halaman awal
+
+Buat kerangka halaman berikut dengan navigasi yang berfungsi:
+
+1. Dashboard — ringkasan pesanan, pesanan menunggu proses, pesanan selesai, dan aktivitas terbaru. Gunakan data contoh yang jelas ditandai sebagai data demo, bukan data transaksi nyata.
+2. Pesanan — kerangka daftar pesanan dengan kategori belum dibayar, perlu diproses, selesai, dan dibatalkan. Belum perlu menghubungkan marketplace.
+3. Detail Pesanan — kerangka informasi nomor pesanan, produk, SKU, nominal digital, status pembayaran, dan status proses.
+4. Chat — halaman kerangka percakapan tanpa koneksi API.
+5. Toko Marketplace — kerangka daftar toko dan status koneksi.
+6. Manajemen Seller — kerangka pengelolaan akun seller.
+7. Pengguna dan Operator — kerangka pengelolaan pengguna.
+8. Integrasi API — kerangka pengaturan integrasi yang nantinya memungkinkan kredensial berbeda untuk setiap instalasi.
+9. Pengaturan — pengaturan tampilan dan aplikasi.
+10. Profil — kerangka informasi akun.
+
+Halaman harus konsisten secara visual. Tampilkan status kosong yang informatif ketika belum ada data. Jangan membuat tombol yang seolah-olah menjalankan tindakan nyata jika fungsinya belum tersedia.
+
+5. Arsitektur teknis
+
+Sebelum menentukan atau mengubah stack, periksa kemampuan lingkungan Replit yang tersedia. Gunakan stack web modern yang stabil, mudah dipelihara, dan cocok untuk PWA.
+
+Susun kode dengan pemisahan tanggung jawab yang jelas, sekurang-kurangnya:
+
+- Frontend dan komponen UI.
+- Backend/API.
+- Konfigurasi aplikasi dan environment.
+- Lapisan akses database dan migrasi skema.
+- Modul autentikasi yang dapat dikembangkan pada tahap berikutnya.
+- Modul integrasi marketplace yang terpisah dari logika bisnis inti.
+- Validasi input, penanganan error, logging, dan pengujian.
+
+Jika backend atau database memerlukan konfigurasi yang belum tersedia, jelaskan persyaratannya. Jangan menggunakan kredensial palsu sebagai kredensial nyata dan jangan mengklaim database telah aktif sebelum diverifikasi.
+
+Arsitektur berikutnya harus mendukung satu instalasi untuk banyak seller dengan isolasi data yang ketat, role Owner/Seller/Operator, beberapa toko per seller, serta kredensial API yang dapat dikonfigurasi. Namun, jangan membangun seluruh fitur tersebut dalam tahap pertama.
+
+6. Keamanan sejak fondasi
+
+- Jangan menaruh secret, App Secret, token, atau password dalam kode frontend.
+- Jangan menulis secret ke log atau memasukkannya ke repository.
+- Sediakan contoh environment dengan placeholder saja.
+- Jangan membuat endpoint sensitif tanpa autentikasi dan otorisasi yang sesuai.
+- Jangan menganggap menyembunyikan tombol sebagai pengganti pemeriksaan izin di backend.
+- Jangan menyimpan data sensitif di localStorage atau cache PWA.
+- Gunakan konfigurasi pengembangan yang terpisah dari produksi.
+
+7. Kriteria selesai
+
+Tahap pertama baru dianggap selesai setelah:
+
+1. Aplikasi dapat dijalankan di lingkungan Replit.
+2. Halaman utama dan navigasi berfungsi.
+3. UI responsif pada ukuran layar mobile dan desktop.
+4. Manifest PWA valid dan proses instalasi sudah diperiksa sejauh didukung lingkungan.
+5. Tidak ada error build yang belum dijelaskan.
+6. Struktur proyek dan konfigurasi terdokumentasi.
+7. Pengujian yang tersedia sudah dijalankan dan hasilnya dilaporkan.
+8. Tidak ada deployment ke VPS produksi atau perubahan pada aplikasi lama.
+
+8. Laporan akhir wajib
+
+Setelah selesai, berikan laporan ringkas yang berisi:
+
+- Struktur folder utama.
+- Stack yang dipilih beserta alasannya.
+- Halaman dan komponen yang telah dibuat.
+- Status build, pengujian, dan pemeriksaan PWA.
+- Konfigurasi atau environment yang masih perlu disiapkan.
+- Kendala yang ditemukan dan pekerjaan yang memang belum dilakukan.
+
+Kerjakan tahap pertama ini saja. Jangan lanjut ke tahap integrasi marketplace atau fitur lanjutan secara otomatis. Tunggu evaluasi hasil sebelum menerima tugas berikutnya.

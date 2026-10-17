@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "ZETAS"
+description = "A responsive, installable order-management and marketplace dashboard foundation for ZETAS. This first stage includes demo-only overview data, navigable management screens, and secure offline behavior without marketplace integrations or live order data."
+version = "1.0.0"
+id = "artifacts/zetas"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 20327
+
+[services.development]
+run = "pnpm --filter @workspace/zetas run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/zetas", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/zetas/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "20327"
+BASE_PATH = "/"
