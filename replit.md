@@ -1,12 +1,12 @@
-# ZETAS
+# DMT
 
-Fondasi aplikasi web responsif dan PWA untuk manajemen pesanan digital ZETAS.
+Fondasi aplikasi web responsif dan PWA DMT untuk manajemen pesanan digital.
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/zetas run dev` — run the ZETAS web app
-- `pnpm --filter @workspace/zetas run typecheck` — check the ZETAS frontend
-- `pnpm --filter @workspace/zetas run build` — build the ZETAS frontend
+- `pnpm --filter @workspace/zetas run dev` — run the DMT web app
+- `pnpm --filter @workspace/zetas run typecheck` — check the DMT frontend
+- `pnpm --filter @workspace/zetas run build` — build the DMT frontend
 - `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
 - `pnpm --filter @workspace/api-server run test` — run auth/tenant integration tests against a dedicated development/test database
 - `pnpm run typecheck` — full typecheck across all packages
@@ -53,11 +53,11 @@ Fondasi aplikasi web responsif dan PWA untuk manajemen pesanan digital ZETAS.
 
 ## Product
 
-ZETAS is a multi-seller/multi-marketplace order-management platform in development. The current foundation includes local multi-tenant authentication and a responsive PWA; order and marketplace screens remain demo-only and are not connected to real stores.
+DMT is a multi-seller/multi-marketplace order-management platform in development. The current foundation includes local multi-tenant authentication and a responsive PWA; order and marketplace screens remain demo-only and are not connected to real stores.
 
 ## User preferences
 
-- Build a new ZETAS project; do not import, copy, or modify any legacy ZETAS app/repository.
+- Continue in this DMT workspace; do not create or import another project.
 - Do not access or change any VPS production deployment or production database.
 - Use only a dedicated development/test database for future persistence.
 - Do not add marketplace APIs, order synchronization, or chat delivery in this stage.

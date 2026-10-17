@@ -1,8 +1,8 @@
 {
   "id": "/",
-  "name": "ZETAS",
-  "short_name": "ZETAS",
-  "description": "Fondasi manajemen pesanan digital ZETAS.",
+  "name": "DMT",
+  "short_name": "DMT",
+  "description": "Fondasi manajemen pesanan digital DMT.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

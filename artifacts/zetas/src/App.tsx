@@ -18,7 +18,7 @@ const pageNames: Record<string, string> = {
 };
 
 function Brand() {
-  return <div className="brand" aria-label="ZETAS workspace"><span className="brand-mark"><Layers3 size={18} strokeWidth={2.1} /></span><div><div className="brand-name">zetas</div><div className="brand-sub">order workspace</div></div></div>;
+  return <div className="brand" aria-label="DMT workspace"><span className="brand-mark"><Layers3 size={18} strokeWidth={2.1} /></span><div><div className="brand-name">DMT</div><div className="brand-sub">order workspace</div></div></div>;
 }
 
 function Shell({ children, user }: { children: ReactNode; user: AuthUser }) {
@@ -63,7 +63,7 @@ function Shell({ children, user }: { children: ReactNode; user: AuthUser }) {
     </aside>
     <main className="main-area">
       <header className="topbar">
-        <Link href="/" className="mobile-menu" aria-label="ZETAS beranda"><span className="brand-mark"><Layers3 size={15} /></span><span>zetas</span></Link>
+        <Link href="/" className="mobile-menu" aria-label="DMT beranda"><span className="brand-mark"><Layers3 size={15} /></span><span>DMT</span></Link>
         <div className="crumb" aria-label="Lokasi saat ini">Workspace <ChevronRight size={12} style={{ display: "inline", verticalAlign: "middle" }} /> {pageNames[active] ?? "Detail pesanan"}</div>
         <div className="top-actions">{showDemo && <span className="demo-pill"><span className="demo-dot" />DEMO DATA</span>}<Link href="/profile" className="avatar" aria-label={`Profil ${user.displayName}`} data-testid="link-topbar-profile">{initials || "ZT"}</Link></div>
       </header>
@@ -174,8 +174,8 @@ const emptyPages: Record<EmptyKind, { eyebrow: string; title: string; subtitle: 
   stores: { eyebrow: "Marketplace", title: "Toko", subtitle: "Lihat ruang untuk toko marketplace dalam satu tampilan.", icon: Store, heading: "Belum ada toko terhubung", body: "Daftar toko akan muncul di sini setelah koneksi marketplace tersedia. Tidak ada koneksi aktif dalam demo." },
   sellers: { eyebrow: "Tim operasional", title: "Seller", subtitle: "Ruang pengelolaan seller untuk alur order digital.", icon: Users, heading: "Belum ada seller", body: "Belum ada seller contoh untuk ditampilkan. Pengelolaan akun dan perubahan data belum tersedia." },
   users: { eyebrow: "Workspace", title: "Pengguna & operator", subtitle: "Ruang pengguna yang membantu mengelola operasional.", icon: Users, heading: "Belum ada pengguna", body: "Daftar operator belum disiapkan. Halaman ini tidak membuat atau mengubah akun." },
-  integrations: { eyebrow: "Pengaturan teknis", title: "Integrasi", subtitle: "Status koneksi layanan untuk workspace ZETAS.", icon: Link2, heading: "Integrasi belum dikonfigurasi", body: "Belum ada API marketplace yang tersambung. Kredensial dan tombol koneksi sengaja tidak disediakan pada tahap fondasi ini. Arsitektur berikutnya akan mengisolasi kredensial per instalasi." },
-  profile: { eyebrow: "Akun", title: "Informasi akun", subtitle: "Ringkasan identitas workspace yang sedang ditampilkan.", icon: CircleHelp, heading: "Akun demo", body: "ZETAS tidak sedang menampilkan sesi pengguna sungguhan. Informasi akun dan pengaturan profil belum dikonfigurasi." },
+  integrations: { eyebrow: "Pengaturan teknis", title: "Integrasi", subtitle: "Status koneksi layanan untuk workspace DMT.", icon: Link2, heading: "Integrasi belum dikonfigurasi", body: "Belum ada API marketplace yang tersambung. Kredensial dan tombol koneksi sengaja tidak disediakan pada tahap fondasi ini. Arsitektur berikutnya akan mengisolasi kredensial per instalasi." },
+  profile: { eyebrow: "Akun", title: "Informasi akun", subtitle: "Ringkasan identitas workspace yang sedang ditampilkan.", icon: CircleHelp, heading: "Akun demo", body: "DMT tidak sedang menampilkan sesi pengguna sungguhan. Informasi akun dan pengaturan profil belum dikonfigurasi." },
 };
 function EmptyPage({ kind }: { kind: EmptyKind }) {
   const page = emptyPages[kind]; const Icon = page.icon;

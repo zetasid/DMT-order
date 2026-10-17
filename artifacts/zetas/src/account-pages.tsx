@@ -51,12 +51,12 @@ export function LoginPage() {
   });
   return <main className="auth-page" data-testid="page-login">
     <section className="auth-story">
-      <div className="auth-brand"><span className="brand-mark"><Building2 size={18} /></span><div><b>zetas</b><small>order workspace</small></div></div>
+      <div className="auth-brand"><span className="brand-mark"><Building2 size={18} /></span><div><b>DMT</b><small>order workspace</small></div></div>
       <div className="auth-story-copy"><span className="auth-kicker">Satu workspace. Ruang yang terjaga.</span><h1>Operasional<br />lebih tertata.</h1><p>Ruang kerja untuk tim seller Indonesia. Setiap anggota melihat toko dan aktivitas sesuai peran serta aksesnya.</p><div className="auth-roles"><span className="auth-role-chip">Owner</span><span className="auth-role-chip">Seller</span><span className="auth-role-chip">Operator</span></div></div>
-      <div className="auth-foot">ZETAS · Workspace operasional seller</div>
+      <div className="auth-foot">DMT · Workspace operasional seller</div>
     </section>
     <section className="auth-form-side"><div className="auth-card">
-      <p className="eyebrow">Selamat datang kembali</p><h2>Masuk ke ZETAS</h2><p>Gunakan akun workspace yang diberikan oleh Owner Anda.</p>
+      <p className="eyebrow">Selamat datang kembali</p><h2>Masuk ke DMT</h2><p>Gunakan akun workspace yang diberikan oleh Owner Anda.</p>
       <Form {...form}><form onSubmit={submit} noValidate>
         <FormField control={form.control} name="email" render={({ field }) => <FormItem className="auth-field"><FormLabel>Email</FormLabel><FormControl><Input {...field} type="email" autoComplete="username" placeholder="nama@bisnis.id" data-testid="input-login-email" /></FormControl><FormMessage /></FormItem>} />
         <FormField control={form.control} name="password" render={({ field }) => <FormItem className="auth-field"><FormLabel>Kata sandi</FormLabel><FormControl><Input {...field} type="password" autoComplete="current-password" placeholder="Masukkan kata sandi" data-testid="input-login-password" /></FormControl><FormMessage /></FormItem>} />
@@ -194,9 +194,9 @@ export function ProfilePage({ user }: { user: AuthUser }) {
     <section className="soft-card profile-card" data-testid="profile-identity">
       <div className="profile-avatar" aria-hidden="true">{initials || "ZT"}</div>
       <div><h2 data-testid="text-profile-name">{user.displayName}</h2><p data-testid="text-profile-email">{user.email}</p><span className="tenant-badge"><KeyRound size={12} />{user.accountType === "owner" ? "Owner" : user.memberships.map(m => m.role).join(" · ") || "Member"}</span></div>
-      <div className="profile-meta"><div><span>Status akun</span><strong data-testid="status-profile-account">{user.status === "active" ? "Aktif" : "Nonaktif"}</strong></div><div><span>Jenis akun</span><strong>{user.accountType === "owner" ? "Owner ZETAS" : "Anggota workspace"}</strong></div></div>
+      <div className="profile-meta"><div><span>Status akun</span><strong data-testid="status-profile-account">{user.status === "active" ? "Aktif" : "Nonaktif"}</strong></div><div><span>Jenis akun</span><strong>{user.accountType === "owner" ? "Owner DMT" : "Anggota workspace"}</strong></div></div>
     </section>
     {user.memberships.length > 0 && <section className="soft-card account-panel"><div className="section-head"><div><h2>Keanggotaan</h2><p>Akses tenant yang terhubung dengan akun ini.</p></div><Building2 size={17} color="#80699f" /></div><div className="account-list">{user.memberships.map(m => <div className="account-row" key={m.tenantId} data-testid={`profile-membership-${m.tenantId}`}><div className="account-user">{m.tenantName}<small>/{m.tenantSlug}</small></div><span className="tenant-badge">{m.role}</span><span /><Link href="/stores" className="account-action" data-testid={`link-membership-tenant-${m.tenantId}`}>Buka toko</Link></div>)}</div></section>}
-    <section className="soft-card account-panel"><div className="section-head"><div><h2>Akhiri sesi</h2><p>Keluar dari workspace pada perangkat ini.</p></div></div>{logout.isError && <div role="alert" className="auth-notice error" data-testid="error-logout">Belum dapat keluar. Coba lagi.</div>}<button type="button" className="account-action danger" disabled={logout.isPending} onClick={() => logout.mutate(undefined, { onSuccess: () => { client.removeQueries({ queryKey: getGetCurrentUserQueryKey() }); setLocation("/login"); }, onError: () => undefined })} data-testid="button-logout">{logout.isPending ? "Mengakhiri sesi…" : "Keluar dari ZETAS"}</button></section>
+    <section className="soft-card account-panel"><div className="section-head"><div><h2>Akhiri sesi</h2><p>Keluar dari workspace pada perangkat ini.</p></div></div>{logout.isError && <div role="alert" className="auth-notice error" data-testid="error-logout">Belum dapat keluar. Coba lagi.</div>}<button type="button" className="account-action danger" disabled={logout.isPending} onClick={() => logout.mutate(undefined, { onSuccess: () => { client.removeQueries({ queryKey: getGetCurrentUserQueryKey() }); setLocation("/login"); }, onError: () => undefined })} data-testid="button-logout">{logout.isPending ? "Mengakhiri sesi…" : "Keluar dari DMT"}</button></section>
   </div>;
 }

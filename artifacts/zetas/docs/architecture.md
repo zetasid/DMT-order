@@ -1,4 +1,4 @@
-# ZETAS application architecture
+# DMT application architecture
 
 ## Stack
 

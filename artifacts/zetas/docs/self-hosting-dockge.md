@@ -1,12 +1,13 @@
-# Self-hosting ZETAS with Docker Compose or Dockge
+# Self-hosting DMT with Docker Compose or Dockge
 
-This deployment uses the Compose file at the repository root. It runs the ZETAS web UI, API, and PostgreSQL. No VPS was accessed or configured as part of this work.
+This deployment uses the Compose file at the repository root. It runs the DMT web UI, API, and PostgreSQL. No VPS was accessed or configured as part of this work.
 
 ## Before starting
 
 - Use a Docker Engine with Docker Compose v2. Dockge can manage the root `compose.yaml`.
 - Put a TLS reverse proxy in front of the web service. Compose publishes the web entrypoint only on `127.0.0.1`; the database and API have no published host ports.
 - Keep the Dockge host's `.env` file private and outside version control.
+- The Compose project identifier and PostgreSQL volume key still use `zetas` for compatibility. Renaming them without preserving the existing volume could make stored data appear missing.
 
 ## Configure secrets
 
@@ -72,20 +73,20 @@ Create a custom-format backup from the Postgres container. The `backups/` direct
 
 ```sh
 mkdir -p backups
-docker compose exec -T db sh -c 'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc' > backups/zetas-$(date +%F-%H%M).dump
+docker compose exec -T db sh -c 'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc' > backups/dmt-$(date +%F-%H%M).dump
 ```
 
 Check that the archive can be read:
 
 ```sh
-docker compose exec -T db pg_restore --list < backups/zetas-YYYY-MM-DD-HHMM.dump
+docker compose exec -T db pg_restore --list < backups/dmt-YYYY-MM-DD-HHMM.dump
 ```
 
 Restore into a new, empty database so the current database remains untouched:
 
 ```sh
-docker compose exec -T db sh -c 'createdb -U "$POSTGRES_USER" zetas_restore'
-docker compose exec -T db sh -c 'pg_restore -U "$POSTGRES_USER" -d zetas_restore --no-owner --no-privileges --exit-on-error' < backups/zetas-YYYY-MM-DD-HHMM.dump
+docker compose exec -T db sh -c 'createdb -U "$POSTGRES_USER" dmt_restore'
+docker compose exec -T db sh -c 'pg_restore -U "$POSTGRES_USER" -d dmt_restore --no-owner --no-privileges --exit-on-error' < backups/dmt-YYYY-MM-DD-HHMM.dump
 ```
 
 Review the restored data before changing the API connection string. Never use `pg_restore --clean` or restore over the active database as part of this procedure. Keep encrypted, off-host backup copies and test restores on a schedule; Compose does not schedule or upload backups.
@@ -99,15 +100,15 @@ The Replit workspace used for this change has no usable BuildKit runner: an unpr
 Create a container-backed Buildx builder if a suitable builder is not already selected:
 
 ```sh
-docker buildx create --name zetas-multiarch --driver docker-container --use
+docker buildx create --name dmt-multiarch --driver docker-container --use
 docker buildx inspect --bootstrap
 ```
 
 Then build both runtime targets:
 
 ```sh
-docker buildx build --platform linux/amd64,linux/arm64 --target api --output=type=oci,dest=/tmp/zetas-api.oci.tar .
-docker buildx build --platform linux/amd64,linux/arm64 --target web --output=type=oci,dest=/tmp/zetas-web.oci.tar .
+docker buildx build --platform linux/amd64,linux/arm64 --target api --output=type=oci,dest=/tmp/dmt-api.oci.tar .
+docker buildx build --platform linux/amd64,linux/arm64 --target web --output=type=oci,dest=/tmp/dmt-web.oci.tar .
 ```
 
 These commands create local OCI archives and do not deploy or push images. The runtime image must still be tested on real amd64 and arm64 hosts before production use.

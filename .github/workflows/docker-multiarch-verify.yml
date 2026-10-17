@@ -1,4 +1,4 @@
-name: Docker multi-architecture verification
+name: DMT Docker multi-architecture verification
 
 on:
   pull_request:
@@ -71,7 +71,7 @@ jobs:
           RUNNER_TEMP: ${{ runner.temp }}
         run: |
           set -euo pipefail
-          archive="$RUNNER_TEMP/zetas-${TARGET}.oci.tar"
+          archive="$RUNNER_TEMP/dmt-${TARGET}.oci.tar"
 
           docker buildx build \
             --platform linux/amd64,linux/arm64 \
@@ -89,7 +89,7 @@ jobs:
       - name: Upload verified OCI archive
         uses: actions/upload-artifact@v7
         with:
-          name: zetas-${{ matrix.target }}-multiarch-oci
-          path: ${{ runner.temp }}/zetas-${{ matrix.target }}.oci.tar
+          name: dmt-${{ matrix.target }}-multiarch-oci
+          path: ${{ runner.temp }}/dmt-${{ matrix.target }}.oci.tar
           if-no-files-found: error
           retention-days: 1
