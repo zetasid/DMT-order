@@ -15,6 +15,8 @@ from typing import Any
 REQUIRED_PLATFORMS = frozenset({("linux", "amd64"), ("linux", "arm64")})
 OCI_INDEX_MEDIA_TYPE = "application/vnd.oci.image.index.v1+json"
 DOCKER_INDEX_MEDIA_TYPE = "application/vnd.docker.distribution.manifest.list.v2+json"
+BUILDKIT_REFERENCE_TYPE_ANNOTATION = "vnd.docker.reference.type"
+BUILDKIT_ATTESTATION_MANIFEST = "attestation-manifest"
 
 
 class OCIValidationError(ValueError):
@@ -71,6 +73,21 @@ def _read_blob(
     return blob
 
 
+def _is_artifact_manifest(descriptor: dict[str, Any], document: dict[str, Any]) -> bool:
+    """Return whether a manifest is an OCI artifact rather than a runnable image."""
+    if "artifactType" in document or "subject" in document:
+        return True
+
+    # BuildKit marks attestation descriptors this way. Their config is often
+    # the empty JSON object, not a runtime image config with os/architecture.
+    annotations = descriptor.get("annotations")
+    return (
+        isinstance(annotations, dict)
+        and annotations.get(BUILDKIT_REFERENCE_TYPE_ANNOTATION)
+        == BUILDKIT_ATTESTATION_MANIFEST
+    )
+
+
 def read_oci_platforms(archive_path: str) -> set[tuple[str, str]]:
     """Read actual image platforms, following nested indexes and image configs."""
     try:
@@ -109,6 +126,12 @@ def read_oci_platforms(archive_path: str) -> set[tuple[str, str]]:
                     visit(child)
                 return
 
+            # Handle artifact markers before interpreting the config as an
+            # image config. BuildKit attestation configs do not declare a
+            # runtime platform.
+            if _is_artifact_manifest(descriptor, document):
+                return
+
             config_descriptor = document.get("config")
             if isinstance(config_descriptor, dict):
                 config_digest = config_descriptor.get("digest")
@@ -141,9 +164,6 @@ def read_oci_platforms(archive_path: str) -> set[tuple[str, str]]:
                 platforms.add((os_name, architecture))
                 return
 
-            # OCI artifacts such as attestations are not runnable image platforms.
-            if "artifactType" in document or "subject" in document:
-                return
             media_type = descriptor.get("mediaType", "")
             if media_type in (OCI_INDEX_MEDIA_TYPE, DOCKER_INDEX_MEDIA_TYPE):
                 raise OCIValidationError(f"Index descriptor {digest} has no manifests")
