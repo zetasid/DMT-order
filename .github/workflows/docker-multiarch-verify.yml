@@ -61,6 +61,8 @@ jobs:
     steps:
       - name: Check out source
         uses: actions/checkout@v7
+      - name: Test OCI platform verifier
+        run: python3 -m unittest discover -s scripts -p 'test_verify_oci_platforms.py' -v
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
         with:
@@ -80,12 +82,7 @@ jobs:
             .
 
           test -s "$archive"
-          platforms="$(tar -xOf "$archive" index.json \
-            | jq -r '.manifests[] | select(.platform.os == "linux") | .platform.architecture' \
-            | sort -u)"
-          printf 'OCI platforms for %s:\n%s\n' "$TARGET" "$platforms"
-          grep -qx amd64 <<<"$platforms"
-          grep -qx arm64 <<<"$platforms"
+          python3 scripts/verify_oci_platforms.py "$archive" --target "$TARGET"
       - name: Upload verified OCI archive
         uses: actions/upload-artifact@v7
         with:
