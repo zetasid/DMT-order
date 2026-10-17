@@ -1,0 +1,139 @@
+PROMPT 2 — ZETAS: Autentikasi, Multi-Tenant, dan Fondasi Docker
+
+Lanjutkan proyek ZETAS yang sudah ada di workspace ini. Jangan membuat proyek baru, jangan menghapus fondasi UI yang sudah selesai, dan jangan mengulang pekerjaan Prompt 1.
+
+A. Tujuan tahap ini
+
+Implementasikan fondasi backend dan database yang aman untuk aplikasi multi-seller, dengan role Owner, Seller, dan Operator. Setiap seller harus mempunyai ruang data sendiri yang terisolasi.
+
+Tahap ini belum mencakup integrasi API marketplace, sinkronisasi pesanan, atau pengiriman chat. Jangan mengimplementasikan fitur tersebut sekarang.
+
+B. Periksa kondisi sebelum mengubah kode
+
+1. Periksa struktur folder, stack, dependensi, kontrak API, skema Drizzle, dokumentasi, dan hasil build saat ini.
+2. Identifikasi bagian yang sudah tersedia agar tidak dibuat ulang.
+3. Periksa apakah ada konfigurasi database yang sudah disiapkan.
+4. Buat rencana perubahan singkat berdasarkan kode yang benar-benar ditemukan.
+5. Pertahankan UI, PWA, dan komponen yang sudah berfungsi.
+
+Jangan mengarang struktur atau mengklaim pemeriksaan telah dilakukan jika belum.
+
+C. Database PostgreSQL
+
+Gunakan PostgreSQL dengan Drizzle ORM sesuai fondasi proyek jika kompatibel.
+
+Siapkan skema dan migrasi terkontrol untuk:
+
+- "users": identitas login dan status akun.
+- "tenants": ruang data masing-masing seller.
+- "tenant_memberships": hubungan pengguna dengan tenant dan role.
+- "sessions": sesi autentikasi yang aman, jika diperlukan oleh implementasi.
+- "audit_logs": catatan tindakan keamanan yang relevan tanpa merekam password, token, atau secret.
+
+Ketentuan:
+
+- Satu instalasi memiliki satu Owner utama.
+- Owner dapat membuat dan mengelola akun seller serta operator.
+- Setiap Seller memiliki tenant tersendiri.
+- Setiap tenant dapat mempunyai beberapa pengguna dan operator.
+- Operator hanya dapat mengakses tenant tempat ia terdaftar dan hanya menjalankan tindakan yang diizinkan.
+- Gunakan foreign key, unique constraint, indeks, dan transaksi jika sesuai.
+- Jangan menyimpan password dalam teks biasa. Gunakan password hashing yang sesuai standar.
+- Jangan menghapus atau mereset database yang sudah ada secara otomatis.
+- Jangan menjalankan migrasi destruktif.
+- Jangan memakai database produksi. Gunakan database pengembangan terpisah.
+
+Jika "DATABASE_URL" belum tersedia, siapkan konfigurasi dan dokumentasinya. Jangan mengklaim database aktif atau migrasi berhasil jika belum benar-benar diuji.
+
+D. Autentikasi dan otorisasi
+
+Implementasikan:
+
+- Login dan logout.
+- Pemeriksaan status akun.
+- Penyimpanan sesi yang aman di server.
+- Cookie sesi dengan "HttpOnly", "Secure" saat HTTPS digunakan, dan "SameSite" yang sesuai.
+- Perlindungan CSRF sesuai mekanisme autentikasi.
+- Validasi input di server.
+- Rate limiting untuk login.
+- Middleware autentikasi dan pemeriksaan izin.
+- Penanganan error yang tidak membocorkan informasi sensitif.
+
+Jangan menyimpan sesi autentikasi atau token rahasia di "localStorage".
+
+Jangan membuat akun Owner default dengan password yang diketahui publik. Jika proses bootstrap Owner diperlukan, dokumentasikan metode aman untuk membuatnya melalui konfigurasi atau perintah administratif satu kali.
+
+E. Isolasi data antar-seller
+
+Ini merupakan persyaratan keamanan utama.
+
+- Tentukan tenant aktif berdasarkan sesi pengguna dan keanggotaan yang telah diverifikasi server.
+- Jangan mempercayai "tenant_id", "role", atau identitas pengguna yang dikirim bebas oleh browser.
+- Semua endpoint yang mengakses data tenant wajib memeriksa autentikasi, keanggotaan, dan izin.
+- Jangan mengambil data tenant hanya berdasarkan ID objek tanpa memeriksa kepemilikannya.
+- Pisahkan akses Owner, Seller, dan Operator secara eksplisit.
+- Owner hanya dapat menjalankan administrasi global yang memang diizinkan.
+- Operator tidak boleh mengelola Owner atau mengakses tenant lain.
+- Jangan membuat endpoint administratif terbuka tanpa autentikasi.
+- Evaluasi penggunaan PostgreSQL Row-Level Security jika sesuai dengan arsitektur dan koneksi database. Jangan mengklaim RLS aktif jika belum diterapkan dan diuji.
+
+F. Pengujian keamanan wajib
+
+Buat pengujian otomatis untuk minimal skenario berikut:
+
+1. Pengguna yang belum login tidak dapat mengakses endpoint privat.
+2. Seller A tidak dapat membaca data milik Seller B.
+3. Seller A tidak dapat mengubah atau menghapus data Seller B.
+4. Operator tidak dapat mengakses tenant lain dengan memanipulasi ID.
+5. Operator tidak dapat melakukan tindakan khusus Owner.
+6. Akun nonaktif tidak dapat melakukan tindakan terlarang.
+7. Permintaan dengan input tidak valid ditolak dengan aman.
+8. Logout mengakhiri sesi sesuai mekanisme yang digunakan.
+
+Gunakan dua tenant dan beberapa pengguna uji. Jika database atau dependensi pengujian belum tersedia, laporkan dengan jelas pengujian mana yang belum dapat dijalankan. Jangan menyatakan isolasi data aman hanya berdasarkan pembacaan kode.
+
+G. Docker dan Dockge
+
+Siapkan fondasi deployment yang bisa dikelola melalui Dockge:
+
+- File "compose.yaml" yang valid.
+- Dockerfile yang sesuai dengan stack proyek.
+- Konfigurasi environment melalui variabel lingkungan.
+- ".env.example" berisi placeholder, tanpa kredensial nyata.
+- PostgreSQL menggunakan volume persisten.
+- Health check dan restart policy yang sesuai.
+- Migrasi database terkontrol, bukan dijalankan secara destruktif setiap container mulai.
+- Dokumentasi cara menjalankan stack, melihat log, melakukan migrasi, backup, dan pemulihan.
+- Jangan mengekspos port database ke internet secara terbuka.
+- Jangan memasukkan data rahasia ke image, repository, atau log.
+
+Kompatibilitas wajib: target "linux/amd64" dan "linux/arm64". Periksa dependensi native, modul Node.js, base image, dan dukungan platform. Jika lingkungan Replit hanya dapat menguji satu arsitektur, jelaskan keterbatasan tersebut dan berikan cara memverifikasi arsitektur kedua melalui Docker Buildx atau CI. Jangan mengklaim kedua arsitektur sudah lulus jika belum diuji.
+
+Siapkan konfigurasi untuk penggunaan Dockge di VPS, tetapi jangan mengakses VPS, mengubah konfigurasi produksi, membangun ulang container produksi, atau melakukan deployment pada tahap ini.
+
+H. UI
+
+Pertahankan desain Premium Glassmorphism yang sudah dibuat:
+
+- Transparan seperti kaca, putih mutiara, abu-abu lembut, lavender, dan aksen pastel.
+- Tipografi premium yang nyaman di Android.
+- Responsif di ponsel dan desktop.
+- Jangan kembali menggunakan navy cerah sebagai warna dominan.
+
+Tambahkan halaman login dan kerangka navigasi sesuai role jika sesuai dengan struktur yang sudah ada. Jangan membuat tombol yang mengaku menjalankan fungsi backend yang belum tersedia.
+
+I. Kriteria selesai dan laporan
+
+Jalankan pemeriksaan yang tersedia, termasuk build, TypeScript, lint, migrasi pada database pengujian jika tersedia, serta tes autentikasi dan isolasi tenant.
+
+Laporkan:
+
+1. File dan skema yang ditambahkan atau diubah.
+2. Cara bootstrap Owner yang aman.
+3. Status database dan migrasi.
+4. Hasil setiap pengujian yang benar-benar dijalankan.
+5. Pengujian yang belum bisa dilakukan dan alasannya.
+6. Status Docker, Dockge, serta verifikasi "amd64" dan "arm64".
+7. Risiko keamanan yang masih terbuka.
+
+Kerjakan tahap ini saja. Jangan melanjutkan ke integrasi marketplace, sinkronisasi pesanan, chat, atau deployment otomatis. Tunggu evaluasi hasil sebelum menerima tugas berikutnya.

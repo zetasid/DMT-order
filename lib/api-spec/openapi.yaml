@@ -10,6 +10,12 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Local email/password authentication and server-side sessions
+  - name: tenants
+    description: Tenant-scoped workspace operations
+  - name: admin
+    description: Owner-only account administration
 paths:
   /healthz:
     get:
@@ -24,7 +30,307 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /auth/csrf:
+    get:
+      operationId: getCsrfToken
+      tags: [auth]
+      summary: Get a session-bound CSRF token
+      responses:
+        "200":
+          description: Session-bound CSRF token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CsrfToken"
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Sign in
+      description: Requires the X-CSRF-Token header returned by /auth/csrf.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginInput"
+      responses:
+        "200":
+          description: Authenticated user and rotated CSRF token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthSessionResponse"
+        "400":
+          description: Invalid input or missing CSRF token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Sign-in failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
+          description: Too many sign-in attempts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Sign out and invalidate the server-side session
+      description: Requires the X-CSRF-Token header and an authenticated session.
+      security:
+        - sessionCookie: []
+      responses:
+        "204":
+          description: Session ended
+        "401":
+          description: Authentication required
+        "403":
+          description: CSRF validation failed
+  /auth/me:
+    get:
+      operationId: getCurrentUser
+      tags: [auth]
+      summary: Get the current authenticated user and tenant memberships
+      security:
+        - sessionCookie: []
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthUserResponse"
+        "401":
+          description: Authentication required
+  /tenants:
+    get:
+      operationId: listTenants
+      tags: [tenants]
+      summary: List tenants visible to the current user
+      security:
+        - sessionCookie: []
+      responses:
+        "200":
+          description: Visible tenants
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TenantListResponse"
+        "401":
+          description: Authentication required
+  /tenants/{tenantId}:
+    parameters:
+      - name: tenantId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      operationId: getTenant
+      tags: [tenants]
+      summary: Read a tenant after membership authorization
+      security:
+        - sessionCookie: []
+      responses:
+        "200":
+          description: Tenant
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Tenant"
+        "401":
+          description: Authentication required
+        "404":
+          description: Tenant not visible to the current user
+    patch:
+      operationId: updateTenant
+      tags: [tenants]
+      summary: Update a tenant name (owner or its seller only)
+      description: Requires the X-CSRF-Token header.
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateTenantInput"
+      responses:
+        "200":
+          description: Updated tenant
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Tenant"
+        "400":
+          description: Invalid input or missing CSRF token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Authentication required
+        "403":
+          description: Role not permitted
+        "404":
+          description: Tenant not found
+    delete:
+      operationId: deactivateTenant
+      tags: [tenants]
+      summary: Deactivate a tenant (owner only; soft deactivation)
+      description: Requires the X-CSRF-Token header. This never deletes tenant records.
+      security:
+        - sessionCookie: []
+      responses:
+        "204":
+          description: Tenant deactivated
+        "401":
+          description: Authentication required
+        "403":
+          description: Owner role required
+        "404":
+          description: Tenant not found
+  /admin/users:
+    get:
+      operationId: listManagedUsers
+      tags: [admin]
+      summary: List sellers, operators, and tenant assignments (owner only)
+      security:
+        - sessionCookie: []
+      responses:
+        "200":
+          description: Managed users
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ManagedUserListResponse"
+        "401":
+          description: Authentication required
+        "403":
+          description: Owner role required
+  /admin/sellers:
+    post:
+      operationId: createSeller
+      tags: [admin]
+      summary: Create a seller, tenant, and seller membership (owner only)
+      description: Requires the X-CSRF-Token header. Passwords are accepted only over the request body and are never logged.
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSellerInput"
+      responses:
+        "201":
+          description: Seller and tenant created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ManagedAccountResponse"
+        "400":
+          description: Invalid input or missing CSRF token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Authentication required
+        "403":
+          description: Owner role required
+        "409":
+          description: Email or tenant slug already exists
+  /admin/operators:
+    post:
+      operationId: createOperator
+      tags: [admin]
+      summary: Create an operator assigned to one tenant (owner only)
+      description: Requires the X-CSRF-Token header.
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateOperatorInput"
+      responses:
+        "201":
+          description: Operator created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ManagedAccountResponse"
+        "400":
+          description: Invalid input or missing CSRF token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Authentication required
+        "403":
+          description: Owner role required
+        "404":
+          description: Tenant not found
+        "409":
+          description: Email already exists
+  /admin/users/{userId}/status:
+    patch:
+      operationId: updateManagedUserStatus
+      tags: [admin]
+      summary: Disable or reactivate a seller/operator account (owner only)
+      description: Requires the X-CSRF-Token header. Owner accounts cannot be changed here.
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserStatusInput"
+      responses:
+        "200":
+          description: Updated account status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ManagedUser"
+        "400":
+          description: Invalid input or missing CSRF token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Authentication required
+        "403":
+          description: Owner role required
+        "404":
+          description: Managed user not found
 components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: zetas.sid
   schemas:
     HealthStatus:
       type: object
@@ -33,4 +339,208 @@ components:
           type: string
       required:
         - status
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required: [error]
+    CsrfToken:
+      type: object
+      properties:
+        csrfToken:
+          type: string
+      required: [csrfToken]
+    LoginInput:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        password:
+          type: string
+          minLength: 1
+          maxLength: 128
+      required: [email, password]
+    MembershipSummary:
+      type: object
+      properties:
+        tenantId:
+          type: string
+          format: uuid
+        tenantName:
+          type: string
+        tenantSlug:
+          type: string
+        role:
+          type: string
+          enum: [seller, operator]
+      required: [tenantId, tenantName, tenantSlug, role]
+    AuthUser:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        displayName:
+          type: string
+        accountType:
+          type: string
+          enum: [owner, member]
+        status:
+          type: string
+          enum: [active, disabled]
+        memberships:
+          type: array
+          items:
+            $ref: "#/components/schemas/MembershipSummary"
+      required: [id, email, displayName, accountType, status, memberships]
+    AuthUserResponse:
+      type: object
+      properties:
+        user:
+          $ref: "#/components/schemas/AuthUser"
+      required: [user]
+    AuthSessionResponse:
+      type: object
+      properties:
+        user:
+          $ref: "#/components/schemas/AuthUser"
+        csrfToken:
+          type: string
+      required: [user, csrfToken]
+    Tenant:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        slug:
+          type: string
+        sellerUserId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [active, disabled]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, name, slug, sellerUserId, status, createdAt, updatedAt]
+    TenantListResponse:
+      type: object
+      properties:
+        tenants:
+          type: array
+          items:
+            $ref: "#/components/schemas/Tenant"
+      required: [tenants]
+    UpdateTenantInput:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+      required: [name]
+    ManagedUser:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        displayName:
+          type: string
+        accountType:
+          type: string
+          enum: [owner, member]
+        status:
+          type: string
+          enum: [active, disabled]
+        memberships:
+          type: array
+          items:
+            $ref: "#/components/schemas/MembershipSummary"
+      required: [id, email, displayName, accountType, status, memberships]
+    ManagedUserListResponse:
+      type: object
+      properties:
+        users:
+          type: array
+          items:
+            $ref: "#/components/schemas/ManagedUser"
+      required: [users]
+    CreateSellerInput:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 120
+        password:
+          type: string
+          minLength: 12
+          maxLength: 128
+        tenantName:
+          type: string
+          minLength: 1
+          maxLength: 120
+        tenantSlug:
+          type: string
+          minLength: 3
+          maxLength: 48
+          pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+      required: [email, displayName, password, tenantName, tenantSlug]
+    CreateOperatorInput:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 120
+        password:
+          type: string
+          minLength: 12
+          maxLength: 128
+        tenantId:
+          type: string
+          format: uuid
+      required: [email, displayName, password, tenantId]
+    ManagedAccountResponse:
+      type: object
+      properties:
+        user:
+          $ref: "#/components/schemas/ManagedUser"
+        tenant:
+          oneOf:
+            - $ref: "#/components/schemas/Tenant"
+            - type: "null"
+      required: [user, tenant]
+    UpdateUserStatusInput:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [active, disabled]
+      required: [status]
 
